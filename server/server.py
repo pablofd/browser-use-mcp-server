@@ -619,6 +619,7 @@ def create_mcp_server(
     default=CONFIG["DEFAULT_TASK_EXPIRY_MINUTES"],
     help="Minutes after which tasks are considered expired",
 )
+@click.option("--stdio", is_flag=True, default=False, help="Enable stdio mode with mcp-proxy")
 def main(
     port: int,
     chrome_path: str,
@@ -626,6 +627,7 @@ def main(
     window_height: int,
     locale: str,
     task_expiry_minutes: int,
+    stdio: bool,
 ) -> int:
     """
     Run the browser-use MCP server.
@@ -640,6 +642,7 @@ def main(
         window_height: Browser window height
         locale: Browser locale
         task_expiry_minutes: Minutes after which tasks are considered expired
+        stdio: Enable stdio mode with mcp-proxy
 
     Returns:
         Exit code (0 for success)
@@ -673,54 +676,88 @@ def main(
 
     sse = SseServerTransport("/messages/")
 
-    async def handle_sse(request):
-        """Handle SSE connections from clients."""
+    if stdio:
+        # When stdio is enabled, we'll use mcp-proxy to create a proxy
+        # that runs our server and exposes stdio
+        import subprocess
+        import sys
+        
+        # Get the absolute path to the current script
+        server_module = sys.modules[__name__]
+        server_file = os.path.abspath(server_module.__file__)
+        
+        # Use sys.executable to get the current Python interpreter path
+        python_executable = sys.executable
+        
+        # Start mcp-proxy with our server command
+        proxy_cmd = [
+            "mcp-proxy",
+            "--sse-port", str(port),
+            "--allow-origin", "*",
+            "--",  # Separate mcp-proxy args from command args
+            python_executable, server_file, "--port", str(port)
+        ]
+
+        logger.info(f"Running proxy command: {' '.join(proxy_cmd)}")
+        
+        # Run the proxy
         try:
-            async with sse.connect_sse(
-                request.scope, request.receive, request._send
-            ) as streams:
-                await app.run(
-                    streams[0], streams[1], app.create_initialization_options()
-                )
+            with subprocess.Popen(proxy_cmd) as proxy_process:
+                proxy_process.wait()
         except Exception as e:
-            logger.error(f"Error in handle_sse: {str(e)}")
-            raise
+            logger.error(f"Error starting mcp-proxy: {str(e)}")
+            logger.error(f"Command was: {' '.join(proxy_cmd)}")
+            return 1
+    else:
+        # When stdio is disabled, we'll just run the SSE server directly
+        async def handle_sse(request):
+            """Handle SSE connections from clients."""
+            try:
+                async with sse.connect_sse(
+                    request.scope, request.receive, request._send
+                ) as streams:
+                    await app.run(
+                        streams[0], streams[1], app.create_initialization_options()
+                    )
+            except Exception as e:
+                logger.error(f"Error in handle_sse: {str(e)}")
+                raise
 
-    starlette_app = Starlette(
-        debug=True,
-        routes=[
-            Route("/sse", endpoint=handle_sse),
-            Mount("/messages/", app=sse.handle_post_message),
-        ],
-    )
+        starlette_app = Starlette(
+            debug=True,
+            routes=[
+                Route("/sse", endpoint=handle_sse),
+                Mount("/messages/", app=sse.handle_post_message),
+            ],
+        )
 
-    # Add a startup event
-    @starlette_app.on_event("startup")
-    async def startup_event():
-        """Initialize the server on startup."""
-        logger.info("Starting MCP server...")
+        # Add a startup event
+        @starlette_app.on_event("startup")
+        async def startup_event():
+            """Initialize the server on startup."""
+            logger.info("Starting MCP server...")
 
-        # Sanity checks for critical configuration
-        if port <= 0 or port > 65535:
-            logger.error(f"Invalid port number: {port}")
-            raise ValueError(f"Invalid port number: {port}")
+            # Sanity checks for critical configuration
+            if port <= 0 or port > 65535:
+                logger.error(f"Invalid port number: {port}")
+                raise ValueError(f"Invalid port number: {port}")
 
-        if window_width <= 0 or window_height <= 0:
-            logger.error(f"Invalid window dimensions: {window_width}x{window_height}")
-            raise ValueError(
-                f"Invalid window dimensions: {window_width}x{window_height}"
-            )
+            if window_width <= 0 or window_height <= 0:
+                logger.error(f"Invalid window dimensions: {window_width}x{window_height}")
+                raise ValueError(
+                    f"Invalid window dimensions: {window_width}x{window_height}"
+                )
 
-        if task_expiry_minutes <= 0:
-            logger.error(f"Invalid task expiry minutes: {task_expiry_minutes}")
-            raise ValueError(f"Invalid task expiry minutes: {task_expiry_minutes}")
+            if task_expiry_minutes <= 0:
+                logger.error(f"Invalid task expiry minutes: {task_expiry_minutes}")
+                raise ValueError(f"Invalid task expiry minutes: {task_expiry_minutes}")
 
-        # Start background task cleanup
-        asyncio.create_task(app.cleanup_old_tasks())
-        logger.info("Task cleanup process scheduled")
+            # Start background task cleanup
+            asyncio.create_task(app.cleanup_old_tasks())
+            logger.info("Task cleanup process scheduled")
 
-    # Run uvicorn server
-    uvicorn.run(starlette_app, host="0.0.0.0", port=port)
+        # Run uvicorn server
+        uvicorn.run(starlette_app, host="0.0.0.0", port=port)
 
     return 0
 
