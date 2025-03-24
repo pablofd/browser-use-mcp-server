@@ -33,6 +33,7 @@ RUN mkdir -p /run/secrets && \
 RUN apt-get update && \
     apt-get install --no-install-recommends -y \
     xfce4 \
+    xfce4-terminal \
     dbus-x11 \
     tigervnc-standalone-server \
     tigervnc-tools \
