@@ -1,11 +1,12 @@
 # ➡️ browser-use mcp server
 
-[browser-use](https://github.com/browser-use/browser-use) MCP Server with SSE
+[browser-use](https://github.com/browser-use/browser-use) MCP Server with SSE + stdio
 transport
 
 ### requirements
 
 - uv
+- mcp-proxy (for stdio)
 
 ```
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -13,11 +14,21 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ### quickstart
 
-```
+Starting in SSE mode:
+```bash
 uv sync
 uv pip install playwright
 uv run playwright install --with-deps --no-shell chromium
 uv run server --port 8000
+```
+
+With stdio mode (for terminal-based clients):
+```bash
+# Run with stdio mode and specify a proxy port
+uv run server --stdio --proxy-port 8001
+
+# Or just stdio mode (random proxy port)
+uv run server --stdio
 ```
 
 - the .env requires the following:
@@ -27,12 +38,9 @@ OPENAI_API_KEY=[your api key]
 CHROME_PATH=[only change this if you have a custom chrome build]
 ```
 
-- we will be adding support for other LLM providers to power browser-use
-  (claude, grok, bedrock, etc)
+When building the docker image, you can use Docker secrets for VNC password:
 
-when building the docker image, you can use Docker secrets for VNC password:
-
-```
+```bash
 # With Docker secrets (recommended for production)
 echo "your-secure-password" > vnc_password.txt
 docker run -v $(pwd)/vnc_password.txt:/run/secrets/vnc_password your-image-name
@@ -44,6 +52,7 @@ docker build .
 ### tools
 
 - [x] SSE transport
+- [x] stdio transport (via mcp-proxy)
 - [x] browser_use - Initiates browser tasks with URL and action
 - [x] browser_get_result - Retrieves results of async browser tasks
 
@@ -52,13 +61,11 @@ docker build .
 - cursor.ai
 - claude desktop
 - claude code
-- <s>windsurf</s> ([windsurf](https://codeium.com/windsurf) doesn't support SSE
-  yet)
+- windsurf ([windsurf](https://codeium.com/windsurf) doesn't support SSE, only stdio)
 
-### usage
+#### SSE Mode
 
-after running the server, add http://localhost:8000/sse to your client UI, or in
-a mcp.json file:
+After running the server in SSE mode, add http://localhost:8000/sse to your client UI, or in a mcp.json file:
 
 ```json
 {
@@ -69,6 +76,31 @@ a mcp.json file:
   }
 }
 ```
+
+#### stdio Mode
+
+When running in stdio mode, the server will automatically start both the SSE server and mcp-proxy. The proxy handles the conversion between stdio and SSE protocols. No additional configuration is needed - just start your terminal-based client and it will communicate with the server through stdin/stdout.
+
+Install the cli
+
+```bash
+uv pip install -e .  
+```
+
+And then e.g., in Windsurf, paste:
+
+```json
+{
+  "mcpServers": {
+    "browser-server": {
+        "command": "browser-use-mcp-server",
+        "args": ["run", "server", "--port", "8000", "--stdio", "--proxy-port", "9000"]
+    }
+  }
+}
+```
+
+### client configuration paths
 
 #### cursor
 
@@ -83,7 +115,9 @@ a mcp.json file:
 - `~/Library/Application Support/Claude/claude_desktop_config.json`
 - `%APPDATA%\Claude\claude_desktop_config.json`
 
-then try asking your LLM the following:
+### example usage
+
+Try asking your LLM the following:
 
 `open https://news.ycombinator.com and return the top ranked article`
 
