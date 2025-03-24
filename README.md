@@ -11,11 +11,14 @@ transport
 
 ### Requirements
 
-- uv
-- mcp-proxy (for stdio)
+- [uv](https://github.com/astral-sh/uv)
+- [mcp-proxy](https://github.com/sparfenyuk/mcp-proxy) (for stdio)
 
 ```
+# 1. Install uv
 curl -LsSf https://astral.sh/uv/install.sh | sh
+# 2. Install mcp-proxy pypi package via uv
+uv tool install mcp-proxy
 ```
 
 ### Quickstart
