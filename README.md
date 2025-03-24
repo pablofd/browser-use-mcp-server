@@ -50,7 +50,8 @@ docker build .
 
 ### VNC
 
-the dockerfile has a vnc server with a default password of browser-use. connect to it:
+the dockerfile has a vnc server with a default password of browser-use. connect
+to it:
 
 ```
 docker build -t  browser-use-mcp-server .
@@ -65,7 +66,6 @@ cd noVNC
 <br>
 <img width="428" alt="Screenshot 2025-03-24 at 12 11 42 PM" src="https://github.com/user-attachments/assets/7db53f41-fc00-4e48-8892-f7108096f9c4" />
 </p>
-
 
 ### supported clients
 
