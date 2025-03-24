@@ -1,9 +1,13 @@
 # ➡️ browser-use mcp server
 
+[![Twitter URL](https://img.shields.io/twitter/url/https/twitter.com/cobrowser.svg?style=social&label=Follow%20%40cobrowser)](https://x.com/cobrowser)
+
 [browser-use](https://github.com/browser-use/browser-use) MCP Server with SSE + stdio
 transport
 
-### requirements
+
+
+### Requirements
 
 - uv
 - mcp-proxy (for stdio)
@@ -12,7 +16,7 @@ transport
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-### quickstart
+### Quickstart
 
 Starting in SSE mode:
 ```bash
@@ -49,14 +53,14 @@ docker run -v $(pwd)/vnc_password.txt:/run/secrets/vnc_password your-image-name
 docker build .
 ```
 
-### tools
+### Tools
 
 - [x] SSE transport
 - [x] stdio transport (via mcp-proxy)
 - [x] browser_use - Initiates browser tasks with URL and action
 - [x] browser_get_result - Retrieves results of async browser tasks
 
-### supported clients
+### Supported Clients
 
 - cursor.ai
 - claude desktop
@@ -100,32 +104,32 @@ And then e.g., in Windsurf, paste:
 }
 ```
 
-### client configuration paths
+### Client Configuration Paths
 
-#### cursor
+#### Cursor
 
 - `./.cursor/mcp.json`
 
-#### windsurf
+#### Windsurf
 
 - `~/.codeium/windsurf/mcp_config.json`
 
-#### claude
+#### Claude
 
 - `~/Library/Application Support/Claude/claude_desktop_config.json`
 - `%APPDATA%\Claude\claude_desktop_config.json`
 
-### example usage
+### Example Usage
 
 Try asking your LLM the following:
 
 `open https://news.ycombinator.com and return the top ranked article`
 
-### help
+### Help
 
 for issues or interest reach out @ https://cobrowser.xyz
 
-# stars
+# Stars
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=co-browser/browser-use-mcp-server&type=Date&theme=dark" />
