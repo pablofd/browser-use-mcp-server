@@ -3,8 +3,8 @@
 [![Twitter URL](https://img.shields.io/twitter/url/https/twitter.com/cobrowser.svg?style=social&label=Follow%20%40cobrowser)](https://x.com/cobrowser)
 [![PyPI version](https://badge.fury.io/py/browser-use-mcp-server.svg)](https://pypi.org/project/browser-use-mcp-server/)
 
-[browser-use](https://github.com/browser-use/browser-use) MCP Server with SSE + stdio
-transport
+[browser-use](https://github.com/browser-use/browser-use) MCP Server with SSE +
+stdio transport
 
 ### Requirements
 
@@ -69,11 +69,13 @@ docker build .
 - cursor.ai
 - claude desktop
 - claude code
-- windsurf ([windsurf](https://codeium.com/windsurf) doesn't support SSE, only stdio)
+- windsurf ([windsurf](https://codeium.com/windsurf) doesn't support SSE, only
+  stdio)
 
 #### SSE Mode
 
-After running the server in SSE mode, add http://localhost:8000/sse to your client UI, or in a mcp.json file:
+After running the server in SSE mode, add http://localhost:8000/sse to your
+client UI, or in a mcp.json file:
 
 ```json
 {
@@ -87,7 +89,11 @@ After running the server in SSE mode, add http://localhost:8000/sse to your clie
 
 #### stdio Mode
 
-When running in stdio mode, the server will automatically start both the SSE server and mcp-proxy. The proxy handles the conversion between stdio and SSE protocols. No additional configuration is needed - just start your terminal-based client and it will communicate with the server through stdin/stdout.
+When running in stdio mode, the server will automatically start both the SSE
+server and mcp-proxy. The proxy handles the conversion between stdio and SSE
+protocols. No additional configuration is needed - just start your
+terminal-based client and it will communicate with the server through
+stdin/stdout.
 
 Install the cli
 
