@@ -25,6 +25,7 @@ uv run server --port 8000
 ```
 OPENAI_API_KEY=[your api key]
 CHROME_PATH=[only change this if you have a custom chrome build]
+PATIENT=false # Set to true if you want api calls to wait for tasks to complete (default is false)
 ```
 
 - we will be adding support for other LLM providers to power browser-use
@@ -46,6 +47,26 @@ docker build .
 - [x] SSE transport
 - [x] browser_use - Initiates browser tasks with URL and action
 - [x] browser_get_result - Retrieves results of async browser tasks
+- [x] VNC server - stream the dockerized browser to your client
+
+### VNC
+
+the dockerfile has a vnc server with a default password of browser-use. connect
+to it:
+
+```
+docker build -t  browser-use-mcp-server .
+docker run --rm -p8000:8000 -p5900:5900 browser-use-mcp-server
+git clone https://github.com/novnc/noVNC
+cd noVNC
+./utils/novnc_proxy --vnc localhost:5900
+```
+
+<p align="center">
+<img width="428" alt="Screenshot 2025-03-24 at 12 03 15 PM" src="https://github.com/user-attachments/assets/45bc5bee-418d-4182-94f5-db84b4fc0b3a" />
+<br>
+<img width="428" alt="Screenshot 2025-03-24 at 12 11 42 PM" src="https://github.com/user-attachments/assets/7db53f41-fc00-4e48-8892-f7108096f9c4" />
+</p>
 
 ### supported clients
 
