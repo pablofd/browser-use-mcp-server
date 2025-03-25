@@ -3,11 +3,8 @@
 [![Twitter URL](https://img.shields.io/twitter/url/https/twitter.com/cobrowser.svg?style=social&label=Follow%20%40cobrowser)](https://x.com/cobrowser)
 [![PyPI version](https://badge.fury.io/py/browser-use-mcp-server.svg)](https://pypi.org/project/browser-use-mcp-server/)
 
-
 [browser-use](https://github.com/browser-use/browser-use) MCP Server with SSE + stdio
 transport
-
-
 
 ### Requirements
 
@@ -24,6 +21,7 @@ uv tool install mcp-proxy
 ### Quickstart
 
 Starting in SSE mode:
+
 ```bash
 uv sync
 uv pip install playwright
@@ -32,6 +30,7 @@ uv run server --port 8000
 ```
 
 With stdio mode (for terminal-based clients):
+
 ```bash
 # Run with stdio mode and specify a proxy port
 uv run server --stdio --proxy-port 8001
@@ -93,7 +92,7 @@ When running in stdio mode, the server will automatically start both the SSE ser
 Install the cli
 
 ```bash
-uv pip install -e .  
+uv pip install -e .
 ```
 
 And then e.g., in Windsurf, paste:
@@ -102,8 +101,16 @@ And then e.g., in Windsurf, paste:
 {
   "mcpServers": {
     "browser-server": {
-        "command": "browser-use-mcp-server",
-        "args": ["run", "server", "--port", "8000", "--stdio", "--proxy-port", "9000"]
+      "command": "browser-use-mcp-server",
+      "args": [
+        "run",
+        "server",
+        "--port",
+        "8000",
+        "--stdio",
+        "--proxy-port",
+        "9000"
+      ]
     }
   }
 }
