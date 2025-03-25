@@ -11,7 +11,6 @@ The server supports Server-Sent Events (SSE) for web-based interfaces.
 
 # Standard library imports
 import os
-import sys
 import asyncio
 import json
 import logging
@@ -604,7 +603,12 @@ def create_mcp_server(
 
 @click.command()
 @click.option("--port", default=8000, help="Port to listen on for SSE")
-@click.option("--proxy-port", default=None, type=int, help="Port for the proxy to listen on. If specified, enables proxy mode.")
+@click.option(
+    "--proxy-port",
+    default=None,
+    type=int,
+    help="Port for the proxy to listen on. If specified, enables proxy mode.",
+)
 @click.option("--chrome-path", default=None, help="Path to Chrome executable")
 @click.option(
     "--window-width",
@@ -622,7 +626,12 @@ def create_mcp_server(
     default=CONFIG["DEFAULT_TASK_EXPIRY_MINUTES"],
     help="Minutes after which tasks are considered expired",
 )
-@click.option("--stdio", is_flag=True, default=False, help="Enable stdio mode. If specified, enables proxy mode.")
+@click.option(
+    "--stdio",
+    is_flag=True,
+    default=False,
+    help="Enable stdio mode. If specified, enables proxy mode.",
+)
 def main(
     port: int,
     proxy_port: Optional[int],
@@ -683,7 +692,6 @@ def main(
     from starlette.routing import Mount, Route
     import uvicorn
     import asyncio
-    from concurrent.futures import ThreadPoolExecutor
     import threading
 
     sse = SseServerTransport("/messages/")
@@ -742,11 +750,10 @@ def main(
     # If proxy mode is enabled, run both the SSE server and mcp-proxy
     if stdio:
         import subprocess
-        import sys
 
         # Start the SSE server in a separate thread
         sse_thread = threading.Thread(target=run_uvicorn)
-        sse_thread.daemon = True  
+        sse_thread.daemon = True
         sse_thread.start()
 
         # Give the SSE server a moment to start
@@ -754,14 +761,18 @@ def main(
 
         proxy_cmd = [
             "mcp-proxy",
-            f"http://localhost:{port}/sse",  
-            "--sse-port", str(proxy_port),
-            "--allow-origin", "*"
+            f"http://localhost:{port}/sse",
+            "--sse-port",
+            str(proxy_port),
+            "--allow-origin",
+            "*",
         ]
 
         logger.info(f"Running proxy command: {' '.join(proxy_cmd)}")
-        logger.info(f"SSE server running on port {port}, proxy running on port {proxy_port}")
-        
+        logger.info(
+            f"SSE server running on port {port}, proxy running on port {proxy_port}"
+        )
+
         try:
             with subprocess.Popen(proxy_cmd) as proxy_process:
                 proxy_process.wait()
