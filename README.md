@@ -29,7 +29,7 @@ uv run playwright install --with-deps --no-shell chromium
 uv run server --port 8000
 ```
 
-With stdio mode (for terminal-based clients):
+With stdio mode:
 
 ```bash
 # Run with stdio mode and specify a proxy port
@@ -91,9 +91,8 @@ client UI, or in a mcp.json file:
 
 When running in stdio mode, the server will automatically start both the SSE
 server and mcp-proxy. The proxy handles the conversion between stdio and SSE
-protocols. No additional configuration is needed - just start your
-terminal-based client and it will communicate with the server through
-stdin/stdout.
+protocols. No additional configuration is needed - just start your client and it
+will communicate with the server through stdin/stdout.
 
 Install the cli
 
