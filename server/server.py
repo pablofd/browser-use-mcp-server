@@ -18,10 +18,13 @@ import traceback
 import uuid
 from datetime import datetime
 from typing import Any, Dict, Optional, Tuple, Union
+import time
+import sys
 
 # Third-party imports
 import click
 from dotenv import load_dotenv
+from pythonjsonlogger import jsonlogger
 
 # Browser-use library imports
 from browser_use import Agent
@@ -37,8 +40,25 @@ from langchain_openai import ChatOpenAI
 from langchain_core.language_models import BaseLanguageModel
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
+logger.handlers = []  # Remove any existing handlers
+handler = logging.StreamHandler(sys.stderr)
+formatter = jsonlogger.JsonFormatter(
+    '{"time":"%(asctime)s","level":"%(levelname)s","name":"%(name)s","message":"%(message)s"}'
+)
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+
+# Ensure uvicorn also logs to stderr in JSON format
+uvicorn_logger = logging.getLogger("uvicorn")
+uvicorn_logger.handlers = []
+uvicorn_logger.addHandler(handler)
+
+# Ensure all other loggers use the same format
+logging.getLogger("browser_use").addHandler(handler)
+logging.getLogger("playwright").addHandler(handler)
+logging.getLogger("mcp").addHandler(handler)
 
 # Load environment variables
 load_dotenv()
@@ -702,6 +722,12 @@ def create_mcp_server(
 
 @click.command()
 @click.option("--port", default=8000, help="Port to listen on for SSE")
+@click.option(
+    "--proxy-port",
+    default=None,
+    type=int,
+    help="Port for the proxy to listen on. If specified, enables proxy mode.",
+)
 @click.option("--chrome-path", default=None, help="Path to Chrome executable")
 @click.option(
     "--window-width",
@@ -719,13 +745,21 @@ def create_mcp_server(
     default=CONFIG["DEFAULT_TASK_EXPIRY_MINUTES"],
     help="Minutes after which tasks are considered expired",
 )
+@click.option(
+    "--stdio",
+    is_flag=True,
+    default=False,
+    help="Enable stdio mode. If specified, enables proxy mode.",
+)
 def main(
     port: int,
+    proxy_port: Optional[int],
     chrome_path: str,
     window_width: int,
     window_height: int,
     locale: str,
     task_expiry_minutes: int,
+    stdio: bool,
 ) -> int:
     """
     Run the browser-use MCP server.
@@ -733,13 +767,19 @@ def main(
     This function initializes the MCP server and runs it with the SSE transport.
     Each browser task will create its own isolated browser context.
 
+    The server can run in two modes:
+    1. Direct SSE mode (default): Just runs the SSE server
+    2. Proxy mode (enabled by --stdio or --proxy-port): Runs both SSE server and mcp-proxy
+
     Args:
         port: Port to listen on for SSE
+        proxy_port: Port for the proxy to listen on. If specified, enables proxy mode.
         chrome_path: Path to Chrome executable
         window_width: Browser window width
         window_height: Browser window height
         locale: Browser locale
         task_expiry_minutes: Minutes after which tasks are considered expired
+        stdio: Enable stdio mode. If specified, enables proxy mode.
 
     Returns:
         Exit code (0 for success)
@@ -770,9 +810,12 @@ def main(
     from starlette.applications import Starlette
     from starlette.routing import Mount, Route
     import uvicorn
+    import asyncio
+    import threading
 
     sse = SseServerTransport("/messages/")
 
+    # Create the Starlette app for SSE
     async def handle_sse(request):
         """Handle SSE connections from clients."""
         try:
@@ -794,7 +837,7 @@ def main(
         ],
     )
 
-    # Add a startup event
+    # Add startup event
     @starlette_app.on_event("startup")
     async def startup_event():
         """Initialize the server on startup."""
@@ -819,8 +862,77 @@ def main(
         asyncio.create_task(app.cleanup_old_tasks())
         logger.info("Task cleanup process scheduled")
 
-    # Run uvicorn server
-    uvicorn.run(starlette_app, host="0.0.0.0", port=port)
+    # Function to run uvicorn in a separate thread
+    def run_uvicorn():
+        # Configure uvicorn to use JSON logging
+        log_config = {
+            "version": 1,
+            "disable_existing_loggers": False,
+            "formatters": {
+                "json": {
+                    "()": "pythonjsonlogger.jsonlogger.JsonFormatter",
+                    "fmt": '{"time":"%(asctime)s","level":"%(levelname)s","name":"%(name)s","message":"%(message)s"}',
+                }
+            },
+            "handlers": {
+                "default": {
+                    "formatter": "json",
+                    "class": "logging.StreamHandler",
+                    "stream": "ext://sys.stderr",
+                }
+            },
+            "loggers": {
+                "": {"handlers": ["default"], "level": "INFO"},
+                "uvicorn": {"handlers": ["default"], "level": "INFO"},
+                "uvicorn.error": {"handlers": ["default"], "level": "INFO"},
+                "uvicorn.access": {"handlers": ["default"], "level": "INFO"},
+            },
+        }
+
+        uvicorn.run(
+            starlette_app,
+            host="0.0.0.0",
+            port=port,
+            log_config=log_config,
+            log_level="info",
+        )
+
+    # If proxy mode is enabled, run both the SSE server and mcp-proxy
+    if stdio:
+        import subprocess
+
+        # Start the SSE server in a separate thread
+        sse_thread = threading.Thread(target=run_uvicorn)
+        sse_thread.daemon = True
+        sse_thread.start()
+
+        # Give the SSE server a moment to start
+        time.sleep(1)
+
+        proxy_cmd = [
+            "mcp-proxy",
+            f"http://localhost:{port}/sse",
+            "--sse-port",
+            str(proxy_port),
+            "--allow-origin",
+            "*",
+        ]
+
+        logger.info(f"Running proxy command: {' '.join(proxy_cmd)}")
+        logger.info(
+            f"SSE server running on port {port}, proxy running on port {proxy_port}"
+        )
+
+        try:
+            with subprocess.Popen(proxy_cmd) as proxy_process:
+                proxy_process.wait()
+        except Exception as e:
+            logger.error(f"Error starting mcp-proxy: {str(e)}")
+            logger.error(f"Command was: {' '.join(proxy_cmd)}")
+            return 1
+    else:
+        logger.info(f"Running in direct SSE mode on port {port}")
+        run_uvicorn()
 
     return 0
 
