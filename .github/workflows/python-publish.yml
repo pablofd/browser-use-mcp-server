@@ -1,3 +1,4 @@
+---
 name: Upload Python Package
 
 on:
@@ -19,6 +20,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Set up uv and Python
         uses: astral-sh/setup-uv@v5

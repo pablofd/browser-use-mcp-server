@@ -27,7 +27,7 @@ uv tool update-shell
 
 Create a `.env` file:
 
-```
+```bash
 OPENAI_API_KEY=your-api-key
 CHROME_PATH=optional/path/to/chrome
 PATIENT=false  # Set to true if API calls should wait for task completion
@@ -65,7 +65,7 @@ browser-use-mcp-server run server --port 8000 --stdio --proxy-port 9000
 
 ## Client Configuration
 
-### SSE Mode
+### SSE Mode Client Configuration
 
 ```json
 {
@@ -77,7 +77,7 @@ browser-use-mcp-server run server --port 8000 --stdio --proxy-port 9000
 }
 ```
 
-### stdio Mode
+### stdio Mode Client Configuration
 
 ```json
 {
@@ -154,17 +154,28 @@ To develop and test the package locally:
 
 ## Docker
 
+Using Docker provides a consistent and isolated environment for running the server.
+
 ```bash
-# Run with default VNC password
+# Build the Docker image
 docker build -t browser-use-mcp-server .
+
+# Run the container with the default VNC password ("browser-use")
+# --rm ensures the container is automatically removed when it stops
+# -p 8000:8000 maps the server port
+# -p 5900:5900 maps the VNC port
 docker run --rm -p8000:8000 -p5900:5900 browser-use-mcp-server
 
-# Use custom VNC password
-echo "your-password" > vnc_password.txt
+# Run with a custom VNC password read from a file
+# Create a file (e.g., vnc_password.txt) containing only your desired password
+echo "your-secure-password" > vnc_password.txt
+# Mount the password file as a secret inside the container
 docker run --rm -p8000:8000 -p5900:5900 \
-  -v $(pwd)/vnc_password.txt:/run/secrets/vnc_password \
+  -v $(pwd)/vnc_password.txt:/run/secrets/vnc_password:ro \
   browser-use-mcp-server
 ```
+
+*Note: The `:ro` flag in the volume mount (`-v`) makes the password file read-only inside the container for added security.*
 
 ### VNC Viewer
 
@@ -175,7 +186,7 @@ cd noVNC
 ./utils/novnc_proxy --vnc localhost:5900
 ```
 
-Default password: `browser-use`
+Default password: `browser-use` (unless overridden using the custom password method)
 
 <div align="center">
   <img width="428" alt="VNC Screenshot" src="https://github.com/user-attachments/assets/45bc5bee-418d-4182-94f5-db84b4fc0b3a" />
@@ -187,7 +198,7 @@ Default password: `browser-use`
 
 Try asking your AI:
 
-```
+```text
 open https://news.ycombinator.com and return the top ranked article
 ```
 

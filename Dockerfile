@@ -18,7 +18,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --frozen --no-install-project --no-dev
-ADD . /app
+COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 
@@ -52,8 +52,10 @@ RUN apt-get update && \
     rm -rf /var/cache/apt/*
 
 # Copy only necessary files from builder
-COPY --from=builder --chown=python:python /python /python
-COPY --from=builder --chown=app:app /app /app
+COPY --from=builder /python /python
+COPY --from=builder /app /app
+# Set proper permissions
+RUN chmod -R 755 /python /app
 
 ENV PATH="/app/.venv/bin:$PATH" \
     DISPLAY=:0 \
