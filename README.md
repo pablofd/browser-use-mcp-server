@@ -27,7 +27,7 @@ uv tool update-shell
 
 Create a `.env` file:
 
-```
+```bash
 OPENAI_API_KEY=your-api-key
 CHROME_PATH=optional/path/to/chrome
 PATIENT=false  # Set to true if API calls should wait for task completion
@@ -65,7 +65,7 @@ browser-use-mcp-server run server --port 8000 --stdio --proxy-port 9000
 
 ## Client Configuration
 
-### SSE Mode
+### SSE Mode Client Configuration
 
 ```json
 {
@@ -77,7 +77,7 @@ browser-use-mcp-server run server --port 8000 --stdio --proxy-port 9000
 }
 ```
 
-### stdio Mode
+### stdio Mode Client Configuration
 
 ```json
 {
@@ -198,7 +198,7 @@ Default password: `browser-use` (unless overridden using the custom password met
 
 Try asking your AI:
 
-```
+```text
 open https://news.ycombinator.com and return the top ranked article
 ```
 
