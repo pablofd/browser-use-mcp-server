@@ -1,10 +1,12 @@
+---
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
-  workflow_dispatch:
+    branches:
+      - main
+  release:
+    types: [published] # Trigger when a release is published
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}-${{
@@ -17,34 +19,6 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  determine_changes:
-    name: "Determine changes"
-    runs-on: ubuntu-latest
-    outputs:
-      # Flag that is raised when any code is changed
-      code: ${{ steps.changed.outputs.code_any_changed }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: tj-actions/changed-files@v45
-        id: changed
-        with:
-          files_yaml: |
-            code:
-              - "**/*"
-              - "!docs/**/*"
-              - "!mkdocs.*.yml"
-              - "!**/*.md"
-              - "!bin/**"
-              - "!assets/**"
-              - "!dist/**"
-              # Generated markdown and JSON files are checked during test runs
-              - "docs/reference/cli.md"
-              - "docs/reference/settings.md"
-              - "docs/configuration/environment.md"
-              - "uv.schema.json"
   lint:
     timeout-minutes: 10
     name: "lint"
@@ -68,8 +42,7 @@ jobs:
         run: uvx ruff check .
 
       - name: "Validate project metadata"
-        run: uvx --from 'validate-pyproject[all,store]' validate-pyproject
-          pyproject.toml
+        run: uvx --from 'validate-pyproject[all,store]' validate-pyproject  pyproject.toml
 
   build-and-publish:
     runs-on: ubuntu-latest
