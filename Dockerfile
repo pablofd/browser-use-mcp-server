@@ -52,8 +52,10 @@ RUN apt-get update && \
     rm -rf /var/cache/apt/*
 
 # Copy only necessary files from builder
-COPY --from=builder --chown=python:python /python /python
-COPY --from=builder --chown=app:app /app /app
+COPY --from=builder /python /python
+COPY --from=builder /app /app
+# Set proper permissions
+RUN chmod -R 755 /python /app
 
 ENV PATH="/app/.venv/bin:$PATH" \
     DISPLAY=:0 \
