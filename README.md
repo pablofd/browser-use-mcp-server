@@ -28,9 +28,16 @@ uv tool update-shell
 Create a `.env` file:
 
 ```bash
+# Required configuration
 OPENAI_API_KEY=your-api-key
 CHROME_PATH=optional/path/to/chrome
 PATIENT=false  # Set to true if API calls should wait for task completion
+
+# Azure OpenAI Configuration (optional)
+# OPENAI_API_TYPE=azure
+# OPENAI_API_VERSION=2023-05-15
+# OPENAI_API_BASE=https://your-resource-name.openai.azure.com
+# AZURE_OPENAI_DEPLOYMENT=your-deployment-name
 ```
 
 ## Installation
@@ -61,6 +68,22 @@ uv tool install dist/browser_use_mcp_server-*.whl
 
 # 2. Run with stdio transport
 browser-use-mcp-server run server --port 8000 --stdio --proxy-port 9000
+```
+
+## Azure OpenAI Support
+
+You can configure the server to use Azure OpenAI instead of standard OpenAI:
+
+```bash
+# Set Azure OpenAI environment variables
+export OPENAI_API_TYPE=azure
+export OPENAI_API_VERSION=2023-05-15
+export OPENAI_API_BASE=https://your-resource-name.openai.azure.com
+export OPENAI_API_KEY=your-azure-openai-api-key
+export AZURE_OPENAI_DEPLOYMENT=your-deployment-name
+
+# Run the server
+uv run server --port 8000
 ```
 
 ## Client Configuration
@@ -176,6 +199,19 @@ docker run --rm -p8000:8000 -p5900:5900 \
 ```
 
 *Note: The `:ro` flag in the volume mount (`-v`) makes the password file read-only inside the container for added security.*
+
+### Docker with Azure OpenAI
+
+```bash
+# Run with Azure OpenAI configuration
+docker run --rm -p8000:8000 -p5900:5900 \
+  -e OPENAI_API_TYPE=azure \
+  -e OPENAI_API_VERSION=2023-05-15 \
+  -e OPENAI_API_BASE=https://your-resource-name.openai.azure.com \
+  -e OPENAI_API_KEY=your-azure-openai-api-key \
+  -e AZURE_OPENAI_DEPLOYMENT=your-deployment-name \
+  browser-use-mcp-server
+```
 
 ### VNC Viewer
 
