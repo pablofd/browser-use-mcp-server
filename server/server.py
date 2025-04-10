@@ -793,8 +793,62 @@ def main(
             "No Chrome path specified, letting Playwright use its default browser"
         )
 
-    # Initialize LLM
-    llm = ChatOpenAI(model="gpt-4o", temperature=0.0)
+def initialize_llm():
+    """
+    Initialize the language model with support for Azure OpenAI.
+    
+    Returns:
+        BaseLanguageModel: Configured LLM instance
+    """
+    # Check if Azure OpenAI is configured
+    is_azure = os.environ.get("OPENAI_API_TYPE") == "azure"
+    
+    if is_azure:
+        # Validate required Azure environment variables
+        required_vars = ["OPENAI_API_KEY", "OPENAI_API_BASE", "AZURE_OPENAI_DEPLOYMENT"]
+        missing = [var for var in required_vars if not os.environ.get(var)]
+        if missing:
+            logger.error(f"Azure OpenAI enabled but missing required variables: {', '.join(missing)}")
+            raise ValueError(f"Azure OpenAI enabled but missing required variables: {', '.join(missing)}")
+        
+        # Get Azure OpenAI configuration
+        deployment_name = os.environ.get("AZURE_OPENAI_DEPLOYMENT")
+        azure_endpoint = os.environ.get("OPENAI_API_BASE")
+        api_version = os.environ.get("OPENAI_API_VERSION", "2023-05-15")
+        api_key = os.environ.get("OPENAI_API_KEY")
+        
+        logger.info(f"Using Azure OpenAI with deployment: {deployment_name}")
+        
+        # Use AzureChatOpenAI with correct parameters
+        from langchain_openai import AzureChatOpenAI
+        
+        return AzureChatOpenAI(
+            deployment_name=deployment_name,
+            openai_api_version=api_version,
+            azure_endpoint=azure_endpoint,
+            api_key=api_key,
+            temperature=0.0
+        )
+    else:
+        # Standard OpenAI
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            logger.error("OPENAI_API_KEY environment variable is required")
+            raise ValueError("OPENAI_API_KEY environment variable is required")
+        
+        model = os.environ.get("OPENAI_MODEL", "gpt-4o")
+        logger.info(f"Using standard OpenAI with model: {model}")
+        
+        # Use regular ChatOpenAI for standard OpenAI
+        from langchain_openai import ChatOpenAI
+        
+        return ChatOpenAI(
+            model=model,
+            temperature=0.0
+        )
+
+    # Initialize LLM using the function
+    llm = initialize_llm()
 
     # Create MCP server
     app = create_mcp_server(
